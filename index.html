@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sound Studio</title>
+    <style>
+        body {
+            font-family: system-ui, sans-serif;
+            background: #111;
+            color: #eee;
+            max-width: 520px;
+            margin: 0 auto;
+            padding: 16px;
+        }
+
+        h1 {
+            font-size: 20px;
+        }
+
+        h2 {
+            font-size: 14px;
+            color: #999;
+            margin: 18px 0 8px;
+            font-weight: 600;
+        }
+
+        .presets,
+        .tools {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        button {
+            background: #2a2a2a;
+            color: #eee;
+            border: 1px solid #444;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #3a3a3a;
+        }
+
+        .primary {
+            background: #2563eb;
+            border-color: #2563eb;
+            width: 100%;
+            margin-top: 12px;
+        }
+
+        .primary:hover {
+            background: #1d4ed8;
+        }
+
+        .purple {
+            background: #7c3aed;
+            border-color: #7c3aed;
+            width: 100%;
+            margin-top: 8px;
+        }
+
+        .purple:hover {
+            background: #6d28d9;
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: 90px 1fr 60px;
+            gap: 8px;
+            align-items: center;
+            margin: 8px 0;
+        }
+
+        .row input[type=range] {
+            width: 100%;
+        }
+
+        select {
+            background: #2a2a2a;
+            color: #eee;
+            border: 1px solid #444;
+            padding: 8px;
+            border-radius: 8px;
+            width: 100%;
+        }
+
+        input[type=number] {
+            background: #2a2a2a;
+            color: #eee;
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 8px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        #wave-canvas {
+            width: 100%;
+            height: 140px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        .item {
+            display: flex;
+            gap: 4px;
+        }
+
+        .item .x {
+            padding: 10px 10px;
+            color: #f87171;
+        }
+
+        .empty {
+            color: #666;
+            font-size: 13px;
+        }
+
+        #codeBox {
+            width: 100%;
+            height: 220px;
+            background: #0b0b0b;
+            color: #a7f3d0;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 10px;
+            font-family: ui-monospace, Menlo, monospace;
+            font-size: 12px;
+            box-sizing: border-box;
+            resize: vertical;
+        }
+
+        /* PIANO */
+        #piano {
+            position: relative;
+            height: 130px;
+            margin-bottom: 12px;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+
+        .key {
+            position: absolute;
+            top: 0;
+            box-sizing: border-box;
+            cursor: pointer;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: 6px;
+            font-size: 11px;
+            border-radius: 0 0 6px 6px;
+        }
+
+        .key.white {
+            background: #eee;
+            color: #333;
+            height: 130px;
+            width: 12.5%;
+            border: 1px solid #111;
+            z-index: 1;
+        }
+
+        .key.black {
+            background: #111;
+            color: #aaa;
+            height: 80px;
+            width: 8%;
+            border: 1px solid #444;
+            z-index: 2;
+        }
+
+        .key.white.on {
+            background: #93c5fd;
+        }
+
+        .key.black.on {
+            background: #2563eb;
+        }
+
+        /* LÍNEA DE TIEMPO */
+        .track {
+            position: relative;
+            height: 44px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            overflow: hidden;
+        }
+
+        .block {
+            position: absolute;
+            top: 6px;
+            height: 30px;
+            border-radius: 6px;
+            opacity: .85;
+        }
+
+        .tl-row {
+            display: grid;
+            grid-template-columns: 1fr 80px 44px;
+            gap: 6px;
+            align-items: center;
+            margin: 6px 0;
+        }
+
+        /* VISTA PREVIA EN VIVO (sitio de ejemplo) */
+        .site {
+            background: #f1f5f9;
+            color: #0f172a;
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 10px;
+        }
+
+        .site h3 {
+            margin: 0 0 12px;
+            font-size: 16px;
+        }
+
+        .site .sbtn {
+            border: none;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            margin: 0 8px 8px 0;
+            color: #fff;
+            cursor: pointer;
+        }
+
+        .site .sbtn:hover {
+            opacity: .85;
+        }
+
+        .sbtn.ok {
+            background: #16a34a;
+        }
+
+        .sbtn.bad {
+            background: #dc2626;
+        }
+
+        .sbtn.info {
+            background: #2563eb;
+        }
+
+        .site .card {
+            background: #fff;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 14px;
+            margin-top: 4px;
+            cursor: pointer;
+        }
+
+        .site .card:hover {
+            border-color: #2563eb;
+        }
+
+        .assign-row {
+            display: grid;
+            grid-template-columns: 1fr 1.4fr;
+            gap: 8px;
+            align-items: center;
+            margin: 6px 0;
+            font-size: 13px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Sound Studio</h1>
+
+    <canvas id="wave-canvas" width="520" height="140"></canvas>
+
+    <div class="presets" id="presets"></div>
+
+    <div class="tools">
+        <button id="random">🎲 Aleatorizar</button>
+        <button id="reset">↺ Reiniciar</button>
+        <button id="saveFav">★ Guardar favorito</button>
+        <button id="addLayer">＋ Agregar capa</button>
+    </div>
+
+    <div class="row">
+        <label>Onda</label>
+        <select id="wave">
+            <option value="sine">Seno</option>
+            <option value="square">Cuadrada</option>
+            <option value="triangle">Triangular</option>
+            <option value="sawtooth">Diente de sierra</option>
+        </select>
+        <span></span>
+    </div>
+
+    <div id="sliders"></div>
+
+    <button id="play" class="primary">▶ Play</button>
+    <button id="playLayers" class="purple">▶ Play capas juntas</button>
+
+    <h2>PIANO (usa la onda y el ADSR de arriba)</h2>
+    <div id="piano"></div>
+
+    <h2>LÍNEA DE TIEMPO (organiza varios efectos en el tiempo)</h2>
+    <div class="track" id="track"></div>
+    <div id="tlRows"></div>
+    <div class="tools">
+        <button id="tlAdd">＋ Agregar sonido actual</button>
+        <button id="tlPlay">▶ Play línea de tiempo</button>
+        <button id="tlClear">Limpiar</button>
+    </div>
+
+    <h2>VISTA PREVIA EN VIVO (adjunta sonidos a un sitio de ejemplo)</h2>
+    <div class="site" id="site"></div>
+    <div id="assign"></div>
+
+    <h2>CAPAS (se tocan al mismo tiempo)</h2>
+    <div class="presets" id="layers"></div>
+
+    <h2>FAVORITOS</h2>
+    <div class="presets" id="favs"></div>
+
+    <h2>EXPORTAR</h2>
+    <div class="tools">
+        <button id="exportWav">⬇ Exportar WAV (sonido actual)</button>
+        <button id="exportLayers">⬇ Exportar WAV (capas)</button>
+    </div>
+
+    <h2>CÓDIGO JAVASCRIPT</h2>
+    <textarea id="codeBox" readonly></textarea>
+    <div class="tools" style="margin-top:8px">
+        <button id="copyCode">Copiar código</button>
+        <button id="codeCurrent">Código del sonido actual</button>
+        <button id="codeLayers">Código de las capas</button>
+    </div>
+
+    <script>
+        const ctx = new AudioContext();
+
+        // ---------- 1. PRESETS ----------
+        const PRESETS = {
+            'Clic': { wave: 'sine', freq: 880, volume: 0.3, attack: 0.005, decay: 0.05, sustain: 0.4, duration: 0.08, release: 0.10 },
+            'Notificación': { wave: 'triangle', freq: 660, volume: 0.3, attack: 0.01, decay: 0.10, sustain: 0.5, duration: 0.25, release: 0.30 },
+            'Éxito': { wave: 'sine', freq: 1046, volume: 0.3, attack: 0.01, decay: 0.10, sustain: 0.5, duration: 0.20, release: 0.25 },
+            'Error': { wave: 'sawtooth', freq: 150, volume: 0.25, attack: 0.01, decay: 0.10, sustain: 0.6, duration: 0.30, release: 0.15 },
+            'Hover': { wave: 'sine', freq: 1200, volume: 0.1, attack: 0.002, decay: 0.02, sustain: 0.3, duration: 0.03, release: 0.05 },
+            'Alerta': { wave: 'square', freq: 520, volume: 0.2, attack: 0.01, decay: 0.10, sustain: 0.6, duration: 0.35, release: 0.20 }
+        };
+        Object.values(PRESETS).forEach(p => p.speed = 1);
+
+        let cfg = { ...PRESETS['Clic'] };
+        let layers = [];
+
+        // ---------- 2. EL MOTOR ----------
+        function timing(c) {
+            const s = c.speed || 1;
+            const attack = c.attack / s;
+            const duration = c.duration / s;
+            const release = c.release / s;
+            const decay = Math.min(c.decay / s, Math.max(0, duration - attack));
+            return { attack, decay, duration, release };
+        }
+
+        function play(c, context = ctx, when = null) {
+            const t = when === null ? context.currentTime : when;
+            const T = timing(c);
+            const osc = context.createOscillator();
+            const gain = context.createGain();
+
+            osc.type = c.wave;
+            osc.frequency.value = c.freq;
+            osc.connect(gain);
+            gain.connect(context.destination);
+
+            gain.gain.setValueAtTime(0, t);
+            gain.gain.linearRampToValueAtTime(c.volume, t + T.attack);
+            gain.gain.linearRampToValueAtTime(c.volume * c.sustain, t + T.attack + T.decay);
+            gain.gain.setValueAtTime(c.volume * c.sustain, t + T.duration);
+            gain.gain.linearRampToValueAtTime(0, t + T.duration + T.release);
+
+            osc.start(t);
+            osc.stop(t + T.duration + T.release);
+        }
+
+        function preview() {
+            ctx.resume();
+            play(cfg);
+            drawWave();
+            updateCode();
+        }
+
+        // ---------- 3. VISUALIZADOR ----------
+        const canvas = document.getElementById('wave-canvas');
+        const g = canvas.getContext('2d');
+
+        function shape(type, p) {
+            switch (type) {
+                case 'sine': return Math.sin(2 * Math.PI * p);
+                case 'square': return (p % 1) < 0.5 ? 1 : -1;
+                case 'triangle': return 2 * Math.abs(2 * (p - Math.floor(p + 0.5))) - 1;
+                case 'sawtooth': return 2 * (p - Math.floor(p + 0.5));
+            }
+        }
+
+        function envelope(c, t) {
+            const T = timing(c);
+            const sus = c.volume * c.sustain;
+            if (t < T.attack) return c.volume * (t / T.attack);
+            if (t < T.attack + T.decay) return c.volume + (sus - c.volume) * ((t - T.attack) / T.decay);
+            if (t < T.duration) return sus;
+            if (t < T.duration + T.release) return sus * (1 - (t - T.duration) / T.release);
+            return 0;
+        }
+
+        function drawWave() {
+            const W = canvas.width, H = canvas.height, mid = H / 2;
+            const T = timing(cfg);
+            const total = T.duration + T.release;
+            const cycles = Math.min(40, Math.max(4, cfg.freq / 25));
+
+            g.clearRect(0, 0, W, H);
+
+            g.strokeStyle = '#333';
+            g.beginPath(); g.moveTo(0, mid); g.lineTo(W, mid); g.stroke();
+
+            g.strokeStyle = '#666';
+            g.setLineDash([4, 4]);
+            [-1, 1].forEach(sign => {
+                g.beginPath();
+                for (let x = 0; x < W; x++) {
+                    const t = (x / W) * total;
+                    const y = mid - sign * envelope(cfg, t) * (mid - 6);
+                    x === 0 ? g.moveTo(x, y) : g.lineTo(x, y);
+                }
+                g.stroke();
+            });
+            g.setLineDash([]);
+
+            g.strokeStyle = '#3b82f6';
+            g.lineWidth = 1.5;
+            g.beginPath();
+            for (let x = 0; x < W; x++) {
+                const t = (x / W) * total;
+                const phase = (x / W) * cycles;
+                const y = mid - shape(cfg.wave, phase) * envelope(cfg, t) * (mid - 6);
+                x === 0 ? g.moveTo(x, y) : g.lineTo(x, y);
+            }
+            g.stroke();
+            g.lineWidth = 1;
+        }
+
+        // ---------- 4. LA UI ----------
+        const SLIDERS = [
+            { key: 'freq', label: 'Frecuencia', min: 50, max: 2000, step: 1 },
+            { key: 'volume', label: 'Volumen', min: 0, max: 1, step: 0.01 },
+            { key: 'duration', label: 'Duración', min: 0.02, max: 1, step: 0.01 },
+            { key: 'speed', label: 'Velocidad', min: 0.25, max: 3, step: 0.05 },
+            { key: 'attack', label: 'Ataque', min: 0.001, max: 0.5, step: 0.001 },
+            { key: 'decay', label: 'Decaimiento', min: 0.001, max: 0.5, step: 0.001 },
+            { key: 'sustain', label: 'Sostenim.', min: 0, max: 1, step: 0.01 },
+            { key: 'release', label: 'Liberación', min: 0.01, max: 1, step: 0.01 }
+        ];
+
+        const slidersDiv = document.getElementById('sliders');
+        const waveSelect = document.getElementById('wave');
+
+        SLIDERS.forEach(s => {
+            const row = document.createElement('div');
+            row.className = 'row';
+            row.innerHTML = `<label>${s.label}</label>
+        <input type="range" id="s-${s.key}" min="${s.min}" max="${s.max}" step="${s.step}">
+        <span id="v-${s.key}"></span>`;
+            slidersDiv.appendChild(row);
+
+            row.querySelector('input').addEventListener('input', e => {
+                cfg[s.key] = parseFloat(e.target.value);
+                refreshUI();
+                preview();
+            });
+        });
+
+        waveSelect.addEventListener('change', e => {
+            cfg.wave = e.target.value;
+            preview();
+        });
+
+        function refreshUI() {
+            waveSelect.value = cfg.wave;
+            SLIDERS.forEach(s => {
+                document.getElementById('s-' + s.key).value = cfg[s.key];
+                document.getElementById('v-' + s.key).textContent = cfg[s.key];
+            });
+        }
+
+        const presetsDiv = document.getElementById('presets');
+        Object.keys(PRESETS).forEach(name => {
+            const b = document.createElement('button');
+            b.textContent = name;
+            b.onclick = () => {
+                cfg = { ...PRESETS[name] };
+                refreshUI();
+                preview();
+            };
+            presetsDiv.appendChild(b);
+        });
+
+        document.getElementById('play').onclick = preview;
+
+        // ---------- 5. ALEATORIZAR ----------
+        const rand = (a, b) => a + Math.random() * (b - a);
+
+        document.getElementById('random').onclick = () => {
+            const waves = ['sine', 'square', 'triangle', 'sawtooth'];
+            cfg = {
+                wave: waves[Math.floor(Math.random() * waves.length)],
+                freq: Math.round(rand(200, 1600)),
+                volume: 0.25,
+                attack: +rand(0.001, 0.03).toFixed(3),
+                decay: +rand(0.02, 0.15).toFixed(3),
+                sustain: +rand(0.2, 0.7).toFixed(2),
+                duration: +rand(0.05, 0.4).toFixed(2),
+                release: +rand(0.05, 0.4).toFixed(2),
+                speed: 1
+            };
+            refreshUI();
+            preview();
+        };
+
+        // ---------- 6. REINICIAR ----------
+        document.getElementById('reset').onclick = () => {
+            cfg = { ...PRESETS['Clic'] };
+            refreshUI();
+            preview();
+        };
+
+        // ---------- 7. CAPAS ----------
+        const layersDiv = document.getElementById('layers');
+
+        function renderLayers() {
+            layersDiv.innerHTML = '';
+            if (layers.length === 0) {
+                layersDiv.innerHTML = '<span class="empty">Sin capas. Ajusta un sonido y toca "Agregar capa".</span>';
+                return;
+            }
+            layers.forEach((l, i) => {
+                const wrap = document.createElement('div');
+                wrap.className = 'item';
+                const b = document.createElement('button');
+                b.textContent = `${i + 1}. ${l.wave} ${l.freq}Hz`;
+                b.onclick = () => { ctx.resume(); play(l); };
+                const x = document.createElement('button');
+                x.className = 'x';
+                x.textContent = '×';
+                x.onclick = () => { layers.splice(i, 1); renderLayers(); };
+                wrap.appendChild(b);
+                wrap.appendChild(x);
+                layersDiv.appendChild(wrap);
+            });
+        }
+
+        document.getElementById('addLayer').onclick = () => {
+            layers.push({ ...cfg });
+            renderLayers();
+        };
+
+        document.getElementById('playLayers').onclick = () => {
+            ctx.resume();
+            layers.forEach(l => play(l));
+        };
+
+        // ---------- 8. FAVORITOS ----------
+        const FAV_KEY = 'soundstudio-favs';
+
+        function loadFavs() {
+            try { return JSON.parse(localStorage.getItem(FAV_KEY)) || []; }
+            catch (e) { return []; }
+        }
+        function saveFavs(list) {
+            try { localStorage.setItem(FAV_KEY, JSON.stringify(list)); }
+            catch (e) { }
+        }
+
+        const favsDiv = document.getElementById('favs');
+
+        function renderFavs() {
+            const favs = loadFavs();
+            favsDiv.innerHTML = '';
+            if (favs.length === 0) {
+                favsDiv.innerHTML = '<span class="empty">Sin favoritos todavía.</span>';
+            }
+            favs.forEach((f, i) => {
+                const wrap = document.createElement('div');
+                wrap.className = 'item';
+                const b = document.createElement('button');
+                b.textContent = '★ ' + f.name;
+                b.onclick = () => { cfg = { speed: 1, ...f.cfg }; refreshUI(); preview(); };
+                const x = document.createElement('button');
+                x.className = 'x';
+                x.textContent = '×';
+                x.onclick = () => {
+                    const list = loadFavs();
+                    list.splice(i, 1);
+                    saveFavs(list);
+                    renderFavs();
+                };
+                wrap.appendChild(b);
+                wrap.appendChild(x);
+                favsDiv.appendChild(wrap);
+            });
+            renderAssign();   // los favoritos nuevos aparecen en la vista previa en vivo
+        }
+
+        document.getElementById('saveFav').onclick = () => {
+            const list = loadFavs();
+            list.push({ name: 'Fav ' + (list.length + 1), cfg: { ...cfg } });
+            saveFavs(list);
+            renderFavs();
+        };
+
+        // ---------- 9. EXPORTAR WAV ----------
+        async function renderToBuffer(list) {
+            const rate = 44100;
+            const longest = Math.max(...list.map(c => {
+                const T = timing(c);
+                return T.duration + T.release;
+            }));
+            const off = new OfflineAudioContext(1, Math.ceil(rate * (longest + 0.05)), rate);
+            list.forEach(c => play(c, off, 0));
+            return await off.startRendering();
+        }
+
+        function bufferToWav(buffer) {
+            const data = buffer.getChannelData(0);
+            const len = data.length;
+            const ab = new ArrayBuffer(44 + len * 2);
+            const v = new DataView(ab);
+            const str = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+
+            str(0, 'RIFF'); v.setUint32(4, 36 + len * 2, true);
+            str(8, 'WAVE');
+            str(12, 'fmt '); v.setUint32(16, 16, true);
+            v.setUint16(20, 1, true);
+            v.setUint16(22, 1, true);
+            v.setUint32(24, buffer.sampleRate, true);
+            v.setUint32(28, buffer.sampleRate * 2, true);
+            v.setUint16(32, 2, true);
+            v.setUint16(34, 16, true);
+            str(36, 'data'); v.setUint32(40, len * 2, true);
+
+            for (let i = 0; i < len; i++) {
+                const s = Math.max(-1, Math.min(1, data[i]));
+                v.setInt16(44 + i * 2, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+            }
+            return new Blob([ab], { type: 'audio/wav' });
+        }
+
+        function download(blob, filename) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+
+        document.getElementById('exportWav').onclick = async () => {
+            const buffer = await renderToBuffer([cfg]);
+            download(bufferToWav(buffer), 'sonido.wav');
+        };
+
+        document.getElementById('exportLayers').onclick = async () => {
+            if (layers.length === 0) { alert('Primero agrega al menos una capa.'); return; }
+            const buffer = await renderToBuffer(layers);
+            download(bufferToWav(buffer), 'capas.wav');
+        };
+
+        // ---------- 10. GENERAR CÓDIGO JAVASCRIPT ----------
+        const r4 = n => +n.toFixed(4);
+
+        function codeFor(list) {
+            const lines = [];
+            lines.push('const ctx = new AudioContext();');
+            lines.push('');
+            lines.push('function tone(wave, freq, volume, attack, decay, sustain, duration, release) {');
+            lines.push('  const t = ctx.currentTime;');
+            lines.push('  const osc = ctx.createOscillator();');
+            lines.push('  const gain = ctx.createGain();');
+            lines.push('  osc.type = wave;');
+            lines.push('  osc.frequency.value = freq;');
+            lines.push('  osc.connect(gain);');
+            lines.push('  gain.connect(ctx.destination);');
+            lines.push('  gain.gain.setValueAtTime(0, t);');
+            lines.push('  gain.gain.linearRampToValueAtTime(volume, t + attack);');
+            lines.push('  gain.gain.linearRampToValueAtTime(volume * sustain, t + attack + decay);');
+            lines.push('  gain.gain.setValueAtTime(volume * sustain, t + duration);');
+            lines.push('  gain.gain.linearRampToValueAtTime(0, t + duration + release);');
+            lines.push('  osc.start(t);');
+            lines.push('  osc.stop(t + duration + release);');
+            lines.push('}');
+            lines.push('');
+            lines.push('function playSound() {');
+            lines.push('  ctx.resume();');
+            list.forEach(c => {
+                const T = timing(c);
+                lines.push("  tone('" + c.wave + "', " + c.freq + ', ' + c.volume + ', ' +
+                    r4(T.attack) + ', ' + r4(T.decay) + ', ' + c.sustain + ', ' +
+                    r4(T.duration) + ', ' + r4(T.release) + ');');
+            });
+            lines.push('}');
+            lines.push('');
+            lines.push('// Úsalo así: document.querySelector("button").onclick = playSound;');
+            return lines.join('\n');
+        }
+
+        const codeBox = document.getElementById('codeBox');
+        function updateCode() { codeBox.value = codeFor([cfg]); }
+
+        document.getElementById('codeCurrent').onclick = updateCode;
+        document.getElementById('codeLayers').onclick = () => {
+            codeBox.value = layers.length ? codeFor(layers) : '// Primero agrega capas.';
+        };
+        document.getElementById('copyCode').onclick = e => {
+            codeBox.select();
+            document.execCommand('copy');
+            const btn = e.target;
+            btn.textContent = '¡Copiado!';
+            setTimeout(() => btn.textContent = 'Copiar código', 1500);
+        };
+
+        // ---------- 11. PIANO ----------
+        const noteToFreq = n => 440 * Math.pow(2, (n - 69) / 12);
+
+        const KEYS = [
+            { n: 60, label: 'C', white: true, k: 'a' },
+            { n: 61, label: 'C#', white: false, k: 'w' },
+            { n: 62, label: 'D', white: true, k: 's' },
+            { n: 63, label: 'D#', white: false, k: 'e' },
+            { n: 64, label: 'E', white: true, k: 'd' },
+            { n: 65, label: 'F', white: true, k: 'f' },
+            { n: 66, label: 'F#', white: false, k: 't' },
+            { n: 67, label: 'G', white: true, k: 'g' },
+            { n: 68, label: 'G#', white: false, k: 'y' },
+            { n: 69, label: 'A', white: true, k: 'h' },
+            { n: 70, label: 'A#', white: false, k: 'u' },
+            { n: 71, label: 'B', white: true, k: 'j' },
+            { n: 72, label: 'C', white: true, k: 'k' }
+        ];
+
+        const pianoDiv = document.getElementById('piano');
+        const keyEls = {};
+        const keyNotes = {};
+        let whitesPlaced = 0;
+
+        KEYS.forEach(key => {
+            const el = document.createElement('div');
+            el.className = 'key ' + (key.white ? 'white' : 'black');
+            el.textContent = key.k.toUpperCase();
+            el.title = key.label;
+
+            if (key.white) {
+                el.style.left = (whitesPlaced * 12.5) + '%';
+                whitesPlaced++;
+            } else {
+                el.style.left = (whitesPlaced * 12.5 - 4) + '%';
+            }
+
+            el.addEventListener('pointerdown', e => { e.preventDefault(); pressNote(key.n, el); });
+            pianoDiv.appendChild(el);
+            keyEls[key.k] = el;
+            keyNotes[key.k] = key.n;
+        });
+
+        function pressNote(n, el) {
+            ctx.resume();
+            play({ ...cfg, freq: noteToFreq(n) });
+            el.classList.add('on');
+            setTimeout(() => el.classList.remove('on'), 150);
+        }
+
+        document.addEventListener('keydown', e => {
+            if (e.repeat || e.metaKey || e.ctrlKey || e.altKey) return;
+            if (['TEXTAREA', 'SELECT', 'INPUT'].includes(e.target.tagName)) return;
+            const k = e.key.toLowerCase();
+            if (keyNotes[k] !== undefined) pressNote(keyNotes[k], keyEls[k]);
+        });
+
+        // ---------- 12. LÍNEA DE TIEMPO ----------
+        // timeline = lista de { cfg, start }: qué sonido y en qué segundo arranca
+        let timeline = [];
+        const trackDiv = document.getElementById('track');
+        const tlRows = document.getElementById('tlRows');
+
+        const soundLength = c => { const T = timing(c); return T.duration + T.release; };
+
+        function renderTimeline() {
+            trackDiv.innerHTML = '';
+            tlRows.innerHTML = '';
+
+            if (timeline.length === 0) {
+                tlRows.innerHTML = '<span class="empty">Vacía. Ajusta un sonido y toca "Agregar sonido actual".</span>';
+                return;
+            }
+
+            // el ancho total de la pista = donde termina el último sonido
+            const total = Math.max(1, ...timeline.map(it => it.start + soundLength(it.cfg)));
+
+            timeline.forEach((it, i) => {
+                // bloque visual
+                const block = document.createElement('div');
+                block.className = 'block';
+                block.style.left = (it.start / total * 100) + '%';
+                block.style.width = Math.max(2, soundLength(it.cfg) / total * 100) + '%';
+                block.style.background = `hsl(${i * 60 % 360}, 70%, 55%)`;
+                trackDiv.appendChild(block);
+
+                // fila editable
+                const row = document.createElement('div');
+                row.className = 'tl-row';
+
+                const name = document.createElement('button');
+                name.textContent = `${i + 1}. ${it.cfg.wave} ${Math.round(it.cfg.freq)}Hz`;
+                name.onclick = () => { ctx.resume(); play(it.cfg); };
+
+                const input = document.createElement('input');
+                input.type = 'number';
+                input.min = 0;
+                input.step = 0.05;
+                input.value = it.start;
+                input.title = 'Segundo en que arranca';
+                input.addEventListener('change', e => {
+                    it.start = Math.max(0, parseFloat(e.target.value) || 0);
+                    renderTimeline();
+                });
+
+                const del = document.createElement('button');
+                del.className = 'x';
+                del.style.color = '#f87171';
+                del.textContent = '×';
+                del.onclick = () => { timeline.splice(i, 1); renderTimeline(); };
+
+                row.appendChild(name);
+                row.appendChild(input);
+                row.appendChild(del);
+                tlRows.appendChild(row);
+            });
+        }
+
+        document.getElementById('tlAdd').onclick = () => {
+            const last = timeline[timeline.length - 1];
+            const start = last ? +(last.start + 0.3).toFixed(2) : 0;   // 0.3 s después del anterior
+            timeline.push({ cfg: { ...cfg }, start });
+            renderTimeline();
+        };
+
+        document.getElementById('tlPlay').onclick = () => {
+            if (timeline.length === 0) return;
+            ctx.resume();
+            const base = ctx.currentTime + 0.05;
+            // cada sonido se agenda en su segundo exacto
+            timeline.forEach(it => play(it.cfg, ctx, base + it.start));
+        };
+
+        document.getElementById('tlClear').onclick = () => { timeline = []; renderTimeline(); };
+
+        // ---------- 13. VISTA PREVIA EN VIVO ----------
+        // Cada elemento del sitio tiene: evento (click u hover) y un sonido asignado
+        const SITE = [
+            { id: 'save', text: 'Guardar', type: 'click', cls: 'ok', sound: 'Éxito' },
+            { id: 'del', text: 'Eliminar', type: 'click', cls: 'bad', sound: 'Error' },
+            { id: 'send', text: 'Enviar mensaje', type: 'click', cls: 'info', sound: 'Notificación' },
+            { id: 'card', text: 'Pasa el mouse aquí', type: 'hover', cls: 'card', sound: 'Hover' }
+        ];
+
+        // assign[id] = { label, cfg }  -> el sonido guardado para ese elemento
+        const assign = {};
+        SITE.forEach(s => { assign[s.id] = { label: s.sound, cfg: { ...PRESETS[s.sound] } }; });
+
+        // Convierte el nombre elegido en una configuración de sonido
+        function resolveSound(label) {
+            if (label === 'Sin sonido') return null;
+            if (PRESETS[label]) return { ...PRESETS[label] };
+            if (label === 'Sonido actual') return { ...cfg };
+            const f = loadFavs().find(x => '★ ' + x.name === label);
+            return f ? { speed: 1, ...f.cfg } : null;
+        }
+
+        const siteDiv = document.getElementById('site');
+        siteDiv.innerHTML = '<h3>MiTienda · Sitio de ejemplo</h3>';
+
+        SITE.forEach(s => {
+            const el = document.createElement(s.type === 'hover' ? 'div' : 'button');
+            el.textContent = s.text;
+            el.className = s.type === 'hover' ? 'card' : 'sbtn ' + s.cls;
+
+            const fire = () => {
+                const a = assign[s.id];
+                if (a && a.cfg) { ctx.resume(); play(a.cfg); }
+            };
+
+            if (s.type === 'hover') {
+                el.addEventListener('mouseenter', fire);       // computadora
+                el.addEventListener('touchstart', fire);       // celular
+            } else {
+                el.addEventListener('click', fire);
+            }
+            siteDiv.appendChild(el);
+        });
+
+        // Los selectores donde eliges qué sonido va con cada elemento
+        const assignDiv = document.getElementById('assign');
+
+        function renderAssign() {
+            const labels = ['Sin sonido', ...Object.keys(PRESETS),
+                ...loadFavs().map(f => '★ ' + f.name), 'Sonido actual'];
+
+            assignDiv.innerHTML = '';
+            SITE.forEach(s => {
+                const row = document.createElement('div');
+                row.className = 'assign-row';
+                row.innerHTML = `<span>${s.text} <small style="color:#888">(${s.type})</small></span>`;
+
+                const sel = document.createElement('select');
+                labels.forEach(l => {
+                    const o = document.createElement('option');
+                    o.value = l;
+                    o.textContent = l;
+                    sel.appendChild(o);
+                });
+                sel.value = assign[s.id].label;
+
+                sel.addEventListener('change', () => {
+                    const c = resolveSound(sel.value);
+                    assign[s.id] = { label: sel.value, cfg: c };
+                    if (c) { ctx.resume(); play(c); }   // al elegir, lo escuchas
+                });
+
+                row.appendChild(sel);
+                assignDiv.appendChild(row);
+            });
+        }
+
+        // ---------- ARRANQUE ----------
+        refreshUI();
+        drawWave();
+        renderLayers();
+        renderFavs();        // también llama a renderAssign()
+        renderTimeline();
+        updateCode();
+    </script>
+</body>
+
+</html>
